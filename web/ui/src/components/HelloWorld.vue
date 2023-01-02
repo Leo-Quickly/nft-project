@@ -2,31 +2,22 @@
   <div class="hello">
     <button @click="connect">Connect</button>
     <p>Connected Accounts: {{ connectedAccounts }}</p>
-    <p>Request Repo <button @click="requestNFTRepo">Repo</button></p>
-    <p>Response from NFTRepo {{ nftRepo }}</p>
-    <p>Response from NFTOwner {{ nftOwner }}</p>
-    <p>Response from NFTPiece {{ nftPiece }}</p>
+    <p>
+      Get owner <button @click="getNFTOwner">getNFTOwner</button>
+      {{ nftOwnerAddr }}
+    </p>
+    <p>Create owner <button @click="createNFTOwner">createNFTOwner</button></p>
+    <p>
+      Create NFTs <button @click="createNFTPiece">createNFTPiece</button>
+      <input type="number" v-model="inputNFTContent" />
+    </p>
+    <p><button @click="getNFTs">getNFTs</button> {{ nfts }}</p>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
-import { ethers } from "ethers";
-import NFTOwner from "@/contracts/NFTOwner";
-import NFTRepo from "@/contracts/NFTRepo";
-import NFTPiece from "@/contracts/NFTPiece";
-
-function listenForTransactionMine(transactionResponse: any, provider: any) {
-  console.log(`Mining ${transactionResponse.hash}`);
-  return new Promise((resolve, reject) => {
-    provider.once(transactionResponse.hash, (transactionReceipt: any) => {
-      console.log(
-        `Completed with ${transactionReceipt.confirmations} confirmations. `
-      );
-      resolve(transactionReceipt);
-    });
-  });
-}
+import { defineComponent, Ref, ref } from "vue";
+import NFTRepo from "@/apis/NFTRepo";
 
 export default defineComponent({
   name: "HelloWorld",
@@ -34,10 +25,6 @@ export default defineComponent({
     msg: String,
   },
   setup() {
-    const nftRepoValue = ref(1);
-    const nftOwnerValue = ref(2);
-    const nftPieceValue = ref(3);
-
     const connectedAccounts = ref("");
 
     // metamask
@@ -62,29 +49,50 @@ export default defineComponent({
       }
     };
 
-    const requestNFTRepo = async () => {
-      const provider = new ethers.providers.Web3Provider(eth);
-      const signer = provider.getSigner();
-      const nftRepo = new ethers.Contract(NFTRepo.address, NFTRepo.abi, signer);
-      const code = await provider.getCode(NFTRepo.address);
-      console.log(code);
+    // get contracts
+    const nftRepoContract = new NFTRepo(eth);
 
-      try {
-        const response = await nftRepo.getHello();
-        nftRepoValue.value = response;
-        console.log(`response: ${response}`);
-      } catch (error) {
-        console.log(error);
-      }
+    const nftOwnerAddr = ref("");
+    const getNFTOwner = async () => {
+      nftRepoContract
+        .getOwner()
+        .then((o) => (nftOwnerAddr.value = o))
+        .catch((e) => console.error(e));
+    };
+
+    const createNFTOwner = async () => {
+      nftRepoContract
+        .createOwner()
+        .then((o) => (nftOwnerAddr.value = o))
+        .catch((e) => console.error(e));
+    };
+
+    const nfts: Ref<string[]> = ref([]);
+    const getNFTs = async () => {
+      nftRepoContract
+        .getNFTs(0, 10)
+        .then((r) => (nfts.value = r))
+        .catch((e) => console.error(e));
+    };
+
+    const inputNFTContent = ref(0);
+    const createNFTPiece = async () => {
+      nftRepoContract
+        .createNFTPiece(inputNFTContent.value)
+        .then(getNFTs)
+        .catch((e) => console.error(e));
     };
 
     return {
-      nftRepo: nftRepoValue,
-      nftOwner: nftOwnerValue,
-      nftPiece: nftPieceValue,
       connect,
       connectedAccounts,
-      requestNFTRepo,
+      getNFTOwner,
+      nftOwnerAddr,
+      createNFTOwner,
+      nfts,
+      getNFTs,
+      inputNFTContent,
+      createNFTPiece,
     };
   },
 });

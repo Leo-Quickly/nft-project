@@ -28,7 +28,7 @@ async function main() {
   console.log(`Deployed NFTOwner ${nftOwner.address}`);
 
   const NFTPiece = await ethers.getContractFactory("NFTPiece");
-  const nftPiece = await NFTPiece.deploy();
+  const nftPiece = await NFTPiece.deploy(1001);
   console.log(`Deployed NFTPiece ${nftPiece.address}`);
 
   const addresses = {
