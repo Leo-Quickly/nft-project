@@ -1,4 +1,8 @@
 import { ethers, network } from "hardhat";
+import { writeFile } from "fs";
+
+// deploy to local:
+// hh run --network localhost scripts/deploy.ts 
 
 async function main() {
   console.log("Deploying to network", network.name);
@@ -26,6 +30,18 @@ async function main() {
   const NFTPiece = await ethers.getContractFactory("NFTPiece");
   const nftPiece = await NFTPiece.deploy();
   console.log(`Deployed NFTPiece ${nftPiece.address}`);
+
+  const addresses = {
+    nftRepo: nftRepo.address,
+    nftOwner: nftOwner.address,
+    nftPiece: nftPiece.address,
+  }
+  writeFile('./bin/deployedContracts.json', JSON.stringify(addresses, null, 2), err => {
+    if (err) {
+      console.error(err);
+      console.log("Cannot write deployed contract address");
+    }
+  });
 
 }
 
